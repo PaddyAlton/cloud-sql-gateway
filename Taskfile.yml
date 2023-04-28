@@ -1,0 +1,32 @@
+version: '3'
+
+tasks:
+
+  prepare:
+    internal: true
+    cmds:
+     - cp -n default.env .env
+     - cp -n config/example.credentials.json config/credentials.json
+     - echo "Please ensure the .env file contains a sensible username/password"
+
+  build:
+    cmds:
+      - docker compose build
+
+  setup:
+    cmds:
+      - task: prepare
+      - task: build
+
+  prox:
+    cmds:
+      - docker compose up --detach
+
+  start:
+    cmds:
+     - task: prox
+     - docker exec -it gateway /gateway/open.sh cloud-sql-proxy-a {{.CLI_ARGS}}
+
+  stop:
+    cmds:
+      - docker compose down

@@ -1,0 +1,39 @@
+# spin up SQL proxy clients
+version: "3.9"
+
+# set up network for the proxy containers and gateway
+networks:
+  sql-gateway:
+    name: &network-name
+      sql-gateway
+
+# common configuration parameters
+x-proxy-common: &proxy-container
+  image: eu.gcr.io/cloudsql-docker/gce-proxy:1.33.6
+  volumes:
+    - ./config:/config
+  networks:
+    - *network-name
+
+# services
+services:
+  gateway:
+    image: gateway
+    command: tail -F anything # simple way to wait in idle mode
+    container_name: gateway
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    depends_on:
+      - "proxy-a"
+    env_file:
+      - .env
+    networks:
+      - *network-name
+
+  proxy-a:
+    <<: *proxy-container
+    container_name: cloud-sql-proxy-a
+    command: /cloud_sql_proxy -instances=<project>:<region>:<instance-name>=tcp:0.0.0.0:5432 -credential_file=/config/credentials.json
+    ports:
+      - 127.0.0.1:5411:5432
